@@ -17,12 +17,14 @@ function App() {
         fetchStudents();
     }, []);
 
+    // Busca alunos do backend
     const fetchStudents = () => {
         axios.get('https://sabergestao1.onrender.com/api/students')
             .then(response => setStudents(response.data))
             .catch(error => console.error('Erro ao buscar alunos:', error));
     };
 
+    // Atualiza os dados do formulário
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData({
@@ -31,6 +33,7 @@ function App() {
         });
     };
 
+    // Envia formulário para criar aluno
     const handleSubmit = (e) => {
         e.preventDefault();
         const competenciesArray = formData.competencies.split(',').map(item => item.trim());
@@ -53,6 +56,7 @@ function App() {
             });
     };
 
+    // Exclui aluno por ID
     const handleDelete = (id) => {
         axios.delete(`https://sabergestao1.onrender.com/api/students/${id}`)
             .then(() => {
@@ -65,6 +69,7 @@ function App() {
             });
     };
 
+    // Atualiza o progresso de um aluno
     const handleUpdateProgress = (id) => {
         const gestao = parseInt(prompt('Digite o progresso para Gestão (0-100):'), 10);
         const excelencia = parseInt(prompt('Digite o progresso para Excelência (0-100):'), 10);
@@ -93,7 +98,7 @@ function App() {
     return (
         <div>
             <h1>Lista de Alunos</h1>
-            {message && <p>{message}</p>} {/* Exibe mensagens de erro ou sucesso */}
+            {message && <p className="message">{message}</p>} {/* Exibe mensagens de erro ou sucesso */}
             
             <form onSubmit={handleSubmit}>
                 <input
