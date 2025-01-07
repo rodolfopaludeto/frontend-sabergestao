@@ -17,15 +17,17 @@ function App() {
   return (
     <div>
       <h1>Lista de Alunos</h1>
-      <ul>
-        {students.map(student => (
-          <li key={student._id}>{student.name} - {student.email}</li>
-        ))}
-      </ul>
+      {students.length > 0 ? (
+        <ul>
+          {students.map(student => (
+            <li key={student._id}>{student.name} - {student.email}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>Nenhum aluno encontrado.</p>
+      )}
     </div>
   );
 }
 
 export default App;
-
-
