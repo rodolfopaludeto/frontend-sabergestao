@@ -11,6 +11,7 @@ function App() {
         receiveWhatsApp: false,
         competencies: ''
     });
+    const [message, setMessage] = useState(''); // Para exibir mensagens de erro ou sucesso
 
     useEffect(() => {
         fetchStudents();
@@ -38,16 +39,30 @@ function App() {
             competencies: competenciesArray
         })
             .then(() => {
+                setMessage('Aluno cadastrado com sucesso!');
                 setFormData({ name: '', email: '', whatsapp: '', receiveWhatsApp: false, competencies: '' });
                 fetchStudents();
             })
-            .catch(error => console.error('Erro ao cadastrar aluno:', error));
+            .catch(error => {
+                if (error.response && error.response.status === 409) {
+                    setMessage('Erro: Email ou WhatsApp já cadastrado!');
+                } else {
+                    setMessage('Erro ao cadastrar aluno.');
+                }
+                console.error('Erro ao cadastrar aluno:', error);
+            });
     };
 
     const handleDelete = (id) => {
         axios.delete(`https://sabergestao1.onrender.com/api/students/${id}`)
-            .then(() => fetchStudents())
-            .catch(error => console.error('Erro ao excluir aluno:', error));
+            .then(() => {
+                setMessage('Aluno excluído com sucesso!');
+                fetchStudents();
+            })
+            .catch(error => {
+                setMessage('Erro ao excluir aluno.');
+                console.error('Erro ao excluir aluno:', error);
+            });
     };
 
     const handleUpdateProgress = (id) => {
@@ -64,15 +79,22 @@ function App() {
             Excelência: excelencia
         };
 
-        axios.put(`https://sabergestao1.onrender.com/api/students/${id}/progress`, { progress })
-            .then(() => fetchStudents())
-            .catch(error => console.error('Erro ao atualizar progresso:', error));
+        axios.patch(`https://sabergestao1.onrender.com/api/students/${id}/progress`, { progress })
+            .then(() => {
+                setMessage('Progresso atualizado com sucesso!');
+                fetchStudents();
+            })
+            .catch(error => {
+                setMessage('Erro ao atualizar progresso.');
+                console.error('Erro ao atualizar progresso:', error);
+            });
     };
 
     return (
         <div>
             <h1>Lista de Alunos</h1>
-
+            {message && <p>{message}</p>} {/* Exibe mensagens de erro ou sucesso */}
+            
             <form onSubmit={handleSubmit}>
                 <input
                     type="text"
