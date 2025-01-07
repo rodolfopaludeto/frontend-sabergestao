@@ -17,15 +17,9 @@ ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, 
 
 function App() {
     const [students, setStudents] = useState([]);
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        whatsapp: '',
-        receiveWhatsApp: false,
-        competencies: ''
-    });
-    const [message, setMessage] = useState(''); // Para exibir mensagens de erro ou sucesso
-    const [chartData, setChartData] = useState(null); // Dados do Radar Chart
+    const [selectedStudent, setSelectedStudent] = useState(null);
+    const [message, setMessage] = useState('');
+    const [newAnalysis, setNewAnalysis] = useState({}); // Para registrar análises
 
     useEffect(() => {
         fetchStudents();
@@ -33,170 +27,104 @@ function App() {
 
     const fetchStudents = () => {
         axios.get('https://sabergestao1.onrender.com/api/students')
-            .then(response => {
-                setStudents(response.data);
-                prepareChartData(response.data);
-            })
+            .then(response => setStudents(response.data))
             .catch(error => console.error('Erro ao buscar alunos:', error));
     };
 
-    const prepareChartData = (students) => {
-        if (students.length === 0) {
-            setChartData(null);
+    const handleSelectStudent = (student) => {
+        setSelectedStudent(student);
+    };
+
+    const handleRegisterAnalysis = () => {
+        if (!selectedStudent || Object.keys(newAnalysis).length === 0) {
+            setMessage('Selecione um aluno e insira os dados de análise.');
             return;
         }
 
-        // Apenas o primeiro aluno como exemplo
-        const student = students[0];
-
-        const data = {
-            labels: Object.keys(student.progress || {}),
-            datasets: [
-                {
-                    label: `Progresso de ${student.name}`,
-                    data: Object.values(student.progress || {}),
-                    backgroundColor: 'rgba(75,192,192,0.2)',
-                    borderColor: 'rgba(75,192,192,1)',
-                    borderWidth: 2
-                }
-            ]
-        };
-
-        setChartData(data);
-    };
-
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData({
-            ...formData,
-            [name]: type === 'checkbox' ? checked : value
-        });
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        const competenciesArray = formData.competencies.split(',').map(item => item.trim());
-        axios.post('https://sabergestao1.onrender.com/api/students', {
-            ...formData,
-            competencies: competenciesArray
+        axios.post(`https://sabergestao1.onrender.com/api/students/${selectedStudent._id}/analyses`, {
+            competencies: newAnalysis
         })
-            .then(() => {
-                setMessage('Aluno cadastrado com sucesso!');
-                setFormData({ name: '', email: '', whatsapp: '', receiveWhatsApp: false, competencies: '' });
-                fetchStudents();
+            .then(response => {
+                setMessage('Análise registrada com sucesso!');
+                fetchStudents(); // Atualiza os dados do aluno
+                setNewAnalysis({});
             })
             .catch(error => {
-                if (error.response && error.response.status === 409) {
-                    setMessage('Erro: Email ou WhatsApp já cadastrado!');
-                } else {
-                    setMessage('Erro ao cadastrar aluno.');
-                }
-                console.error('Erro ao cadastrar aluno:', error);
+                setMessage('Erro ao registrar análise.');
+                console.error('Erro ao registrar análise:', error);
             });
     };
 
-    const handleDelete = (id) => {
-        axios.delete(`https://sabergestao1.onrender.com/api/students/${id}`)
-            .then(() => {
-                setMessage('Aluno excluído com sucesso!');
-                fetchStudents();
-            })
-            .catch(error => {
-                setMessage('Erro ao excluir aluno.');
-                console.error('Erro ao excluir aluno:', error);
-            });
-    };
-
-    const handleUpdateProgress = (id) => {
-        const gestao = parseInt(prompt('Digite o progresso para Gestão (0-100):'), 10);
-        const excelencia = parseInt(prompt('Digite o progresso para Excelência (0-100):'), 10);
-
-        if (isNaN(gestao) || isNaN(excelencia)) {
-            alert('Por favor, insira valores válidos!');
-            return;
+    const getRadarData = () => {
+        if (!selectedStudent || !selectedStudent.analyses || selectedStudent.analyses.length === 0) {
+            return null;
         }
 
-        const progress = {
-            Gestão: gestao,
-            Excelência: excelencia
-        };
+        const labels = Object.keys(selectedStudent.analyses[0].competencies);
+        const datasets = selectedStudent.analyses.map((analysis, index) => ({
+            label: `Análise ${index + 1}`,
+            data: Object.values(analysis.competencies),
+            fill: true,
+            backgroundColor: `rgba(${100 + index * 50}, 99, 132, 0.2)`,
+            borderColor: `rgba(${100 + index * 50}, 99, 132, 1)`,
+            borderWidth: 1,
+        }));
 
-        axios.patch(`https://sabergestao1.onrender.com/api/students/${id}/progress`, { progress })
-            .then(() => {
-                setMessage('Progresso atualizado com sucesso!');
-                fetchStudents();
-            })
-            .catch(error => {
-                setMessage('Erro ao atualizar progresso.');
-                console.error('Erro ao atualizar progresso:', error);
-            });
+        return {
+            labels,
+            datasets,
+        };
     };
+
+    const radarData = getRadarData();
 
     return (
         <div>
             <h1>Lista de Alunos</h1>
-            {message && <p>{message}</p>} {/* Exibe mensagens de erro ou sucesso */}
-            
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="Nome"
-                    required
-                />
-                <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="E-mail"
-                    required
-                />
-                <input
-                    type="text"
-                    name="whatsapp"
-                    value={formData.whatsapp}
-                    onChange={handleChange}
-                    placeholder="WhatsApp"
-                />
-                <label>
-                    <input
-                        type="checkbox"
-                        name="receiveWhatsApp"
-                        checked={formData.receiveWhatsApp}
-                        onChange={handleChange}
-                    />
-                    Receber notificações pelo WhatsApp
-                </label>
-                <input
-                    type="text"
-                    name="competencies"
-                    value={formData.competencies}
-                    onChange={handleChange}
-                    placeholder="Competências (separadas por vírgula)"
-                />
-                <button type="submit">Cadastrar Aluno</button>
-            </form>
+            {message && <p>{message}</p>}
 
             <ul>
                 {students.map(student => (
                     <li key={student._id}>
                         {student.name} - {student.email}
-                        <button onClick={() => handleUpdateProgress(student._id)}>Atualizar Progresso</button>
-                        <button onClick={() => handleDelete(student._id)}>Excluir</button>
+                        <button onClick={() => handleSelectStudent(student)}>Selecionar</button>
                     </li>
                 ))}
             </ul>
 
-            {chartData ? (
+            {selectedStudent && (
                 <div>
-                    <h2>Radar Chart</h2>
-                    <Radar data={chartData} />
+                    <h2>Aluno Selecionado: {selectedStudent.name}</h2>
+
+                    <div>
+                        <h3>Registrar Nova Análise</h3>
+                        <input
+                            type="number"
+                            placeholder="Gestão"
+                            onChange={(e) => setNewAnalysis({ ...newAnalysis, Gestão: parseInt(e.target.value, 10) })}
+                        />
+                        <input
+                            type="number"
+                            placeholder="Excelência"
+                            onChange={(e) => setNewAnalysis({ ...newAnalysis, Excelência: parseInt(e.target.value, 10) })}
+                        />
+                        <input
+                            type="number"
+                            placeholder="Liderança"
+                            onChange={(e) => setNewAnalysis({ ...newAnalysis, Liderança: parseInt(e.target.value, 10) })}
+                        />
+                        <button onClick={handleRegisterAnalysis}>Registrar</button>
+                    </div>
+
+                    {radarData ? (
+                        <div>
+                            <h3>Evolução das Competências</h3>
+                            <Radar data={radarData} />
+                        </div>
+                    ) : (
+                        <p>Sem dados de análise para exibir no gráfico</p>
+                    )}
                 </div>
-            ) : (
-                <p>Sem dados para exibir no gráfico</p>
             )}
         </div>
     );
