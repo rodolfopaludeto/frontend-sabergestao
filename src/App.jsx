@@ -1,7 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { Radar } from 'react-chartjs-2';
 import './index.css'; // Certifique-se de que o arquivo index.css está configurado
-import { Radar } from 'react-chartjs-2'; // Importando Radar Chart
+import {
+    Chart as ChartJS,
+    RadialLinearScale,
+    PointElement,
+    LineElement,
+    Filler,
+    Tooltip,
+    Legend
+} from 'chart.js';
+
+// Registrar componentes do Chart.js
+ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
 function App() {
     const [students, setStudents] = useState([]);
@@ -13,6 +25,7 @@ function App() {
         competencies: ''
     });
     const [message, setMessage] = useState(''); // Para exibir mensagens de erro ou sucesso
+    const [chartData, setChartData] = useState(null); // Dados do Radar Chart
 
     useEffect(() => {
         fetchStudents();
@@ -20,8 +33,36 @@ function App() {
 
     const fetchStudents = () => {
         axios.get('https://sabergestao1.onrender.com/api/students')
-            .then(response => setStudents(response.data))
+            .then(response => {
+                setStudents(response.data);
+                prepareChartData(response.data);
+            })
             .catch(error => console.error('Erro ao buscar alunos:', error));
+    };
+
+    const prepareChartData = (students) => {
+        if (students.length === 0) {
+            setChartData(null);
+            return;
+        }
+
+        // Apenas o primeiro aluno como exemplo
+        const student = students[0];
+
+        const data = {
+            labels: Object.keys(student.progress || {}),
+            datasets: [
+                {
+                    label: `Progresso de ${student.name}`,
+                    data: Object.values(student.progress || {}),
+                    backgroundColor: 'rgba(75,192,192,0.2)',
+                    borderColor: 'rgba(75,192,192,1)',
+                    borderWidth: 2
+                }
+            ]
+        };
+
+        setChartData(data);
     };
 
     const handleChange = (e) => {
@@ -91,32 +132,11 @@ function App() {
             });
     };
 
-    const renderRadarChart = (progress) => {
-        if (!progress || Object.keys(progress).length === 0) {
-            return <p>Sem progresso registrado</p>;
-        }
-
-        const data = {
-            labels: Object.keys(progress),
-            datasets: [
-                {
-                    label: 'Progresso (%)',
-                    data: Object.values(progress),
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 1,
-                }
-            ]
-        };
-
-        return <Radar data={data} />;
-    };
-
     return (
         <div>
             <h1>Lista de Alunos</h1>
             {message && <p>{message}</p>} {/* Exibe mensagens de erro ou sucesso */}
-
+            
             <form onSubmit={handleSubmit}>
                 <input
                     type="text"
@@ -166,10 +186,18 @@ function App() {
                         {student.name} - {student.email}
                         <button onClick={() => handleUpdateProgress(student._id)}>Atualizar Progresso</button>
                         <button onClick={() => handleDelete(student._id)}>Excluir</button>
-                        {renderRadarChart(student.progress)}
                     </li>
                 ))}
             </ul>
+
+            {chartData ? (
+                <div>
+                    <h2>Radar Chart</h2>
+                    <Radar data={chartData} />
+                </div>
+            ) : (
+                <p>Sem dados para exibir no gráfico</p>
+            )}
         </div>
     );
 }
