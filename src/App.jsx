@@ -1,3 +1,6 @@
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+
 function App() {
   const [students, setStudents] = useState([]);
 
@@ -29,3 +32,4 @@ function App() {
   );
 }
 
+export default App; // Importante: Certifique-se de que esta linha esteja presente.
