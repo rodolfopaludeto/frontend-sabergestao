@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import './index.css'; // Certifique-se de que o arquivo index.css contém o estilo básico
+import './index.css'; // Certifique-se de que o arquivo index.css está configurado
 
 function App() {
     const [students, setStudents] = useState([]);
@@ -51,10 +51,19 @@ function App() {
     };
 
     const handleUpdateProgress = (id) => {
+        const gestao = parseInt(prompt('Digite o progresso para Gestão (0-100):'), 10);
+        const excelencia = parseInt(prompt('Digite o progresso para Excelência (0-100):'), 10);
+
+        if (isNaN(gestao) || isNaN(excelencia)) {
+            alert('Por favor, insira valores válidos!');
+            return;
+        }
+
         const progress = {
-            Gestão: 80,
-            Excelência: 90
-        }; // Exemplo de progresso
+            Gestão: gestao,
+            Excelência: excelencia
+        };
+
         axios.put(`https://sabergestao1.onrender.com/api/students/${id}/progress`, { progress })
             .then(() => fetchStudents())
             .catch(error => console.error('Erro ao atualizar progresso:', error));
