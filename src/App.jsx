@@ -32,4 +32,5 @@ function App() {
   );
 }
 
-export default App; // Importante: Certifique-se de que esta linha esteja presente.
+export default App; // Certifique-se de que esta linha esteja presente.
+
