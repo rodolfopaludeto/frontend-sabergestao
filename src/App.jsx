@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import './index.css'; // Certifique-se de que o arquivo index.css contém o estilo básico
 
 function App() {
     const [students, setStudents] = useState([]);
@@ -12,10 +13,14 @@ function App() {
     });
 
     useEffect(() => {
+        fetchStudents();
+    }, []);
+
+    const fetchStudents = () => {
         axios.get('https://sabergestao1.onrender.com/api/students')
             .then(response => setStudents(response.data))
             .catch(error => console.error('Erro ao buscar alunos:', error));
-    }, []);
+    };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -34,15 +39,31 @@ function App() {
         })
             .then(() => {
                 setFormData({ name: '', email: '', whatsapp: '', receiveWhatsApp: false, competencies: '' });
-                axios.get('https://sabergestao1.onrender.com/api/students')
-                    .then(response => setStudents(response.data));
+                fetchStudents();
             })
             .catch(error => console.error('Erro ao cadastrar aluno:', error));
+    };
+
+    const handleDelete = (id) => {
+        axios.delete(`https://sabergestao1.onrender.com/api/students/${id}`)
+            .then(() => fetchStudents())
+            .catch(error => console.error('Erro ao excluir aluno:', error));
+    };
+
+    const handleUpdateProgress = (id) => {
+        const progress = {
+            Gestão: 80,
+            Excelência: 90
+        }; // Exemplo de progresso
+        axios.put(`https://sabergestao1.onrender.com/api/students/${id}/progress`, { progress })
+            .then(() => fetchStudents())
+            .catch(error => console.error('Erro ao atualizar progresso:', error));
     };
 
     return (
         <div>
             <h1>Lista de Alunos</h1>
+
             <form onSubmit={handleSubmit}>
                 <input
                     type="text"
@@ -85,10 +106,13 @@ function App() {
                 />
                 <button type="submit">Cadastrar Aluno</button>
             </form>
+
             <ul>
                 {students.map(student => (
                     <li key={student._id}>
                         {student.name} - {student.email}
+                        <button onClick={() => handleUpdateProgress(student._id)}>Atualizar Progresso</button>
+                        <button onClick={() => handleDelete(student._id)}>Excluir</button>
                     </li>
                 ))}
             </ul>
